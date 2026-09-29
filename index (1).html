@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Mercado de Trabalho PNAD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* Layout: report canvas — header band, filter bar, then panel grid that stacks to 1 column on phone width */
+  :root{
+    --bg: #f4f3ee;
+    --surface: #ffffff;
+    --surface-2: #fbfaf7;
+    --ink: #16211c;
+    --ink-2: #52544e;
+    --muted: #8c8d84;
+    --hair: #dedcd2;
+    --accent: #1a5f3f;
+    --accent-2: #eb6834;
+    --highlight: #0f8a6a;
+    --highlight-soft: #e3f3ed;
+    --bar: #9a9c93;
+    --good: #0f7a4a;
+    --chip-bg: #ffffff;
+    --chip-on: #16211c;
+    --chip-on-ink: #ffffff;
+    --tip-bg: #16211c;
+    --tip-ink: #ffffff;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #0d130f;
+      --surface: #151c17;
+      --surface-2: #101613;
+      --ink: #f2f3ee;
+      --ink-2: #b9bbb1;
+      --muted: #7c8079;
+      --hair: #2a332c;
+      --accent: #4fbf8b;
+      --accent-2: #ff9a5c;
+      --highlight: #4fbf8b;
+      --highlight-soft: #1a2e24;
+      --bar: #7d817a;
+      --good: #57cf98;
+      --chip-bg: #1b241e;
+      --chip-on: #4fbf8b;
+      --chip-on-ink: #0d130f;
+      --tip-bg: #f2f3ee;
+      --tip-ink: #16211c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #0d130f; --surface: #151c17; --surface-2: #101613;
+    --ink: #f2f3ee; --ink-2: #b9bbb1; --muted: #7c8079; --hair: #2a332c;
+    --accent: #4fbf8b; --accent-2: #ff9a5c; --highlight: #4fbf8b; --highlight-soft: #1a2e24;
+    --bar: #7d817a; --good: #57cf98;
+    --chip-bg: #1b241e; --chip-on: #4fbf8b; --chip-on-ink: #0d130f;
+    --tip-bg: #f2f3ee; --tip-ink: #16211c;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Libre Franklin",system-ui,-apple-system,"Segoe UI",sans-serif;
+    padding-inline:16px; padding-block:28px 48px;
+  }
+  .wrap{max-width:1040px; margin:0 auto}
+  .num{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+  header.top{
+    display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px;
+    padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid var(--hair);
+  }
+  .eyebrow{font-size:11.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--muted); font-weight:600}
+  h1{font-size:clamp(22px,4vw,32px); font-weight:800; letter-spacing:-0.01em; margin:6px 0 6px; text-wrap:balance}
+  .sub{color:var(--ink-2); font-size:14px; max-width:56ch; line-height:1.5}
+  .byline{text-align:right; font-size:12.5px; color:var(--muted); line-height:1.6; min-width:150px}
+  .byline b{color:var(--ink-2); font-weight:600}
+
+  /* ---- filter bar ---- */
+  .filterbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+    background:var(--surface); border:1px solid var(--hair); border-radius:12px;
+    padding:13px 16px; margin-bottom:16px;
+  }
+  .fgroup{display:flex; align-items:center; gap:9px; flex-wrap:wrap; min-width:0}
+  .flabel{font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  .seg{display:flex; gap:5px; flex-wrap:wrap}
+  .chip{
+    font:inherit; font-size:12.5px; font-weight:600; color:var(--ink-2);
+    background:var(--chip-bg); border:1px solid var(--hair); border-radius:999px;
+    padding:6px 13px; cursor:pointer; transition:background .12s, color .12s, border-color .12s;
+  }
+  .chip:hover{border-color:var(--muted)}
+  .chip[aria-pressed="true"]{background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on)}
+  .chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .reset{
+    font:inherit; font-size:12px; font-weight:600; color:var(--muted);
+    background:none; border:none; cursor:pointer; text-decoration:underline; padding:6px 2px; margin-left:auto;
+  }
+  .reset:hover{color:var(--ink-2)}
+  .reset:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:760px){ .grid{grid-template-columns:1fr} }
+
+  .panel{
+    background:var(--surface); border:1px solid var(--hair); border-radius:12px;
+    padding:18px 18px 16px; display:flex; flex-direction:column; min-width:0;
+  }
+  .panel.wide{grid-column:1 / -1}
+  .panel h2{font-size:14.5px; font-weight:700; margin:0 0 2px; letter-spacing:-0.005em}
+  .panel .desc{font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.45}
+  .tag{
+    display:inline-block; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--muted); border:1px solid var(--hair); border-radius:4px; padding:2px 6px; margin-left:6px;
+  }
+
+  /* ---- column chart ---- */
+  .colchart{display:flex; align-items:flex-end; gap:18px; height:170px; padding:0 6px; position:relative}
+  .colchart .gridlines{position:absolute; inset:0 6px; display:flex; flex-direction:column-reverse; justify-content:space-between; pointer-events:none}
+  .colchart .gridlines i{display:block; border-top:1px solid var(--hair); height:0}
+  .col{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    height:100%; gap:8px; position:relative; z-index:1; background:none; border:none; padding:0;
+    font:inherit; color:inherit; cursor:pointer;
+  }
+  .col .bar{width:100%; max-width:46px; background:var(--bar); border-radius:4px 4px 0 0; transition:background .14s}
+  .col .val{font-size:15px; font-weight:600; color:var(--ink-2)}
+  .col .lbl{font-size:11.5px; color:var(--muted); margin-top:2px}
+  .col[aria-pressed="true"] .bar{background:var(--highlight)}
+  .col[aria-pressed="true"] .val{color:var(--highlight)}
+  .col:hover .bar{background:var(--accent)}
+  .col:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
+
+  /* ---- horizontal bars ---- */
+  .hbars{display:flex; flex-direction:column; gap:9px; margin-top:2px}
+  .hrow{display:grid; grid-template-columns:148px 1fr 46px; align-items:center; gap:10px}
+  .hrow .name{font-size:12px; color:var(--ink-2); text-align:right; white-space:nowrap}
+  .hrow.hi .name{color:var(--highlight); font-weight:700}
+  .track{position:relative; height:18px; background:var(--surface-2); border-radius:3px; cursor:default}
+  .fill{position:absolute; left:0; top:0; bottom:0; border-radius:3px 4px 4px 3px; background:var(--bar); transition:width .32s cubic-bezier(.4,0,.2,1)}
+  .hrow.hi .fill{background:var(--highlight)}
+  .hrow:hover .fill{filter:brightness(1.18)}
+  .hrow .v{font-size:12.5px; font-weight:600; text-align:left}
+  .hrow.hi .v{color:var(--highlight)}
+  .group-lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:10px 0 2px}
+  .group-lbl:first-child{margin-top:0}
+  .count{font-size:11.5px; color:var(--muted); margin-top:12px}
+  .empty{font-size:13px; color:var(--muted); padding:18px 0}
+
+  @media (prefers-reduced-motion: reduce){ .fill{transition:none} }
+
+  /* ---- KPI tiles ---- */
+  .kpis{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+  @media (max-width:520px){ .kpis{grid-template-columns:1fr} }
+  .kpi{background:var(--surface-2); border:1px solid var(--hair); border-radius:10px; padding:13px 14px}
+  .kpi .label{font-size:11.5px; color:var(--muted); margin-bottom:7px; line-height:1.3}
+  .kpi .value{font-size:23px; font-weight:700; letter-spacing:-0.01em}
+  .kpi .delta{font-size:11.5px; margin-top:5px; color:var(--ink-2)}
+  .kpi .delta.good{color:var(--good)}
+  .kpi .delta.bad{color:var(--accent-2)}
+
+  /* ---- tooltip ---- */
+  #tip{
+    position:fixed; z-index:99; pointer-events:none; opacity:0; transition:opacity .1s;
+    background:var(--tip-bg); color:var(--tip-ink); border-radius:7px; padding:8px 11px;
+    font-size:12px; line-height:1.45; max-width:240px; box-shadow:0 4px 16px rgba(0,0,0,.22);
+  }
+  #tip b{font-weight:700}
+  #tip .t-sub{opacity:.75; font-size:11px}
+
+  footer{margin-top:22px; padding-top:14px; border-top:1px solid var(--hair); font-size:11px; color:var(--muted); line-height:1.6}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">PNAD Contínua Trimestral · IBGE</div>
+      <h1>O mercado de trabalho no Brasil, em números</h1>
+      <div class="sub">Desemprego, renda e desigualdade — com um recorte para São Paulo. Use os filtros para explorar os dados.</div>
+    </div>
+    <div class="byline">Análise de <b>Breno Caetano</b><br>Analista de Dados · Ciências Econômicas</div>
+  </header>
+
+  <div class="filterbar">
+    <div class="fgroup">
+      <span class="flabel">Trimestre</span>
+      <div class="seg" id="segTri"></div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Estados</span>
+      <div class="seg" id="segUf"></div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Ordem</span>
+      <div class="seg" id="segOrd"></div>
+    </div>
+    <button class="reset" id="btnReset" type="button">Limpar filtros</button>
+  </div>
+
+  <div class="grid">
+
+    <div class="panel">
+      <h2 id="t1">Desemprego nacional por trimestre</h2>
+      <div class="desc">Taxa de desocupação, Brasil. Clique numa barra para mudar o trimestre.</div>
+      <div class="colchart" id="chartTri">
+        <div class="gridlines"><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>São Paulo em 4 números</h2>
+      <div class="desc" id="spDesc">Recorte estadual</div>
+      <div class="kpis" id="kpisSp"></div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Do menor ao maior desemprego do país</h2>
+      <div class="desc">Taxa de desocupação por estado (extremos divulgados no release) <span class="tag">2º tri/2026</span></div>
+      <div class="hbars" id="barsUf"></div>
+      <div class="count" id="countUf"></div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Quem sente mais o desemprego</h2>
+      <div class="desc">Taxa de desocupação por recorte, Brasil <span class="tag">2º tri/2026</span></div>
+      <div class="fgroup" style="margin-bottom:14px">
+        <span class="flabel">Recorte</span>
+        <div class="seg" id="segRec"></div>
+      </div>
+      <div class="hbars" id="barsRec"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    Fonte: IBGE, Agência de Notícias — PNAD Contínua Trimestral, releases do 1º e 2º trimestres de 2026, e reportagem sobre o mercado de trabalho paulista no mesmo período. O painel por UF traz apenas os extremos divulgados no release, não as 27 unidades da federação. Renda média e carteira assinada de São Paulo referem-se ao 2º tri/2026.
+  </footer>
+
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TRI = [
+    { id:'2T25', label:'2º tri/25', full:'2º trimestre de 2025', brasil:5.8, renda:3635, sp:5.1 },
+    { id:'1T26', label:'1º tri/26', full:'1º trimestre de 2026', brasil:6.1, renda:3795, sp:6.0 },
+    { id:'2T26', label:'2º tri/26', full:'2º trimestre de 2026', brasil:5.4, renda:3738, sp:5.4 }
+  ];
+
+  var UFS = [
+    { nome:'Amapá',              taxa:9.8, grupo:'maiores'  },
+    { nome:'Bahia',              taxa:9.1, grupo:'maiores'  },
+    { nome:'Pernambuco',         taxa:8.3, grupo:'maiores'  },
+    { nome:'Piauí',              taxa:8.3, grupo:'maiores'  },
+    { nome:'Sergipe',            taxa:7.9, grupo:'maiores'  },
+    { nome:'São Paulo',          taxa:5.4, grupo:'sp'       },
+    { nome:'Mato Grosso do Sul', taxa:2.7, grupo:'menores'  },
+    { nome:'Rondônia',           taxa:2.6, grupo:'menores'  },
+    { nome:'Espírito Santo',     taxa:2.3, grupo:'menores'  },
+    { nome:'Mato Grosso',        taxa:2.2, grupo:'menores'  },
+    { nome:'Santa Catarina',     taxa:2.1, grupo:'menores'  }
+  ];
+
+  var RECORTES = {
+    sexo:         { label:'Sexo',         itens:[ {n:'Homens',v:4.6}, {n:'Mulheres',v:6.4} ] },
+    raca:         { label:'Raça/cor',     itens:[ {n:'Branca',v:4.2}, {n:'Parda',v:6.1}, {n:'Preta',v:6.9} ] },
+    escolaridade: { label:'Escolaridade', itens:[ {n:'Médio incompleto',v:9.0}, {n:'Superior incompleto',v:5.6}, {n:'Superior completo',v:3.0} ] }
+  };
+
+  var SP_2T26 = { renda:4447, carteira:'11,65 mi', informalidade:30.1 };
+  var BR_RENDA_2T26 = 3738;
+
+  var PADRAO = { tri:'2T26', uf:'todos', ord:'desc', rec:'sexo' };
+  var estado = Object.assign({}, PADRAO);
+
+  function $(id){ return document.getElementById(id); }
+  function fmt(n, casas){ return n.toFixed(casas === undefined ? 1 : casas).replace('.', ','); }
+  function triAtual(){ for(var i=0;i<TRI.length;i++){ if(TRI[i].id === estado.tri) return TRI[i]; } return TRI[2]; }
+  function triIndex(){ for(var i=0;i<TRI.length;i++){ if(TRI[i].id === estado.tri) return i; } return 2; }
+
+  /* ---------- tooltip ---------- */
+  var tip = $('tip');
+  function showTip(ev, html){
+    tip.innerHTML = html;
+    tip.style.opacity = '1';
+    var r = tip.getBoundingClientRect();
+    var x = ev.clientX + 14, y = ev.clientY + 14;
+    if(x + r.width > window.innerWidth - 8) x = ev.clientX - r.width - 14;
+    if(y + r.height > window.innerHeight - 8) y = ev.clientY - r.height - 14;
+    tip.style.left = Math.max(8, x) + 'px';
+    tip.style.top  = Math.max(8, y) + 'px';
+  }
+  function hideTip(){ tip.style.opacity = '0'; }
+  function bindTip(el, html){
+    el.addEventListener('mousemove', function(ev){ showTip(ev, html); });
+    el.addEventListener('mouseleave', hideTip);
+  }
+
+  /* ---------- segmented controls ---------- */
+  function montaSeg(container, opcoes, chaveEstado, aoMudar){
+    container.innerHTML = '';
+    opcoes.forEach(function(op){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = op.label;
+      b.setAttribute('aria-pressed', String(estado[chaveEstado] === op.id));
+      b.addEventListener('click', function(){
+        estado[chaveEstado] = op.id;
+        aoMudar();
+      });
+      container.appendChild(b);
+    });
+  }
+
+  /* ---------- painel 1: trimestre ---------- */
+  function renderTri(){
+    var host = $('chartTri');
+    Array.prototype.slice.call(host.querySelectorAll('.col')).forEach(function(n){ n.remove(); });
+    var max = 7;
+    TRI.forEach(function(t){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'col';
+      b.setAttribute('aria-pressed', String(t.id === estado.tri));
+      b.setAttribute('aria-label', 'Selecionar ' + t.full + ', taxa ' + fmt(t.brasil) + ' por cento');
+      var altura = Math.round((t.brasil / max) * 150);
+      b.innerHTML =
+        '<span class="val num">' + fmt(t.brasil) + '%</span>' +
+        '<span class="bar" style="height:' + altura + 'px"></span>' +
+        '<span class="lbl">' + t.label + '</span>';
+      bindTip(b, '<b>' + t.full + '</b><br>Desocupação Brasil: <b>' + fmt(t.brasil) + '%</b>' +
+                 '<br><span class="t-sub">Renda média R$ ' + t.renda.toLocaleString('pt-BR') + ' · SP ' + fmt(t.sp) + '%</span>');
+      b.addEventListener('click', function(){ estado.tri = t.id; render(); });
+      host.appendChild(b);
+    });
+    $('t1').textContent = 'Desemprego nacional — ' + triAtual().full;
+  }
+
+  /* ---------- painel 2: KPIs de SP ---------- */
+  function renderSp(){
+    var t = triAtual();
+    var i = triIndex();
+    var ant = i > 0 ? TRI[i-1] : null;
+    var host = $('kpisSp');
+    var cards = [];
+
+    var deltaSp = '';
+    if(ant){
+      var d = t.sp - ant.sp;
+      var cls = d < 0 ? 'good' : (d > 0 ? 'bad' : '');
+      var seta = d < 0 ? '↓' : (d > 0 ? '↑' : '→');
+      deltaSp = '<div class="delta ' + cls + '">' + seta + ' ' + fmt(Math.abs(d)) + ' p.p. vs. ' + ant.label + '</div>';
+    } else {
+      deltaSp = '<div class="delta">Primeiro trimestre da série exibida</div>';
+    }
+    cards.push({
+      label:'Taxa de desocupação em SP',
+      value:fmt(t.sp) + '%',
+      extra:deltaSp,
+      tip:'<b>São Paulo — ' + t.full + '</b><br>Taxa de desocupação: <b>' + fmt(t.sp) + '%</b><br><span class="t-sub">Brasil no mesmo trimestre: ' + fmt(t.brasil) + '%</span>'
+    });
+
+    var difBr = (t.sp - t.brasil);
+    cards.push({
+      label:'SP comparado ao Brasil',
+      value:(difBr === 0 ? 'igual' : (difBr > 0 ? '+' : '−') + fmt(Math.abs(difBr)) + ' p.p.'),
+      extra:'<div class="delta">Brasil: ' + fmt(t.brasil) + '% neste trimestre</div>',
+      tip:'<b>Diferença SP × Brasil</b><br>' + (difBr === 0
+            ? 'No ' + t.full + ' as duas taxas são iguais: <b>' + fmt(t.sp) + '%</b>.'
+            : 'SP está <b>' + fmt(Math.abs(difBr)) + ' p.p.</b> ' + (difBr > 0 ? 'acima' : 'abaixo') + ' da média nacional.')
+    });
+
+    cards.push({
+      label:'Renda média mensal em SP',
+      value:'R$ ' + SP_2T26.renda.toLocaleString('pt-BR'),
+      extra:'<div class="delta good">+19% vs. média do Brasil</div>',
+      tip:'<b>Renda média — São Paulo</b><br>R$ ' + SP_2T26.renda.toLocaleString('pt-BR') +
+          '<br><span class="t-sub">Brasil: R$ ' + BR_RENDA_2T26.toLocaleString('pt-BR') + ' · dado do 2º tri/2026</span>'
+    });
+
+    cards.push({
+      label:'Com carteira assinada (setor privado)',
+      value:SP_2T26.carteira,
+      extra:'<div class="delta">Maior contingente do país</div>',
+      tip:'<b>Carteira assinada em SP</b><br>11,65 milhões no setor privado<br><span class="t-sub">Maior número entre todas as UFs · 2º tri/2026</span>'
+    });
+
+    host.innerHTML = '';
+    cards.forEach(function(c){
+      var d = document.createElement('div');
+      d.className = 'kpi';
+      d.innerHTML = '<div class="label">' + c.label + '</div><div class="value num">' + c.value + '</div>' + c.extra;
+      bindTip(d, c.tip);
+      host.appendChild(d);
+    });
+
+    $('spDesc').innerHTML = 'Trimestre selecionado: <b>' + t.full + '</b>. Renda e carteira assinada referem-se ao 2º tri/2026.';
+  }
+
+  /* ---------- painel 3: UFs ---------- */
+  function renderUf(){
+    var lista = UFS.filter(function(u){
+      if(estado.uf === 'todos') return true;
+      if(estado.uf === 'sp') return u.grupo === 'sp';
+      return u.grupo === estado.uf || u.grupo === 'sp';
+    });
+    lista = lista.slice().sort(function(a,b){
+      return estado.ord === 'desc' ? b.taxa - a.taxa : a.taxa - b.taxa;
+    });
+
+    var host = $('barsUf');
+    host.innerHTML = '';
+    if(!lista.length){
+      host.innerHTML = '<div class="empty">Nenhum estado neste filtro.</div>';
+      $('countUf').textContent = '';
+      return;
+    }
+
+    var maxEscala = 10;
+    var media = 5.4;
+    lista.forEach(function(u){
+      var row = document.createElement('div');
+      row.className = 'hrow' + (u.grupo === 'sp' ? ' hi' : '');
+      row.innerHTML =
+        '<div class="name">' + u.nome + '</div>' +
+        '<div class="track"><div class="fill" style="width:' + ((u.taxa / maxEscala) * 100) + '%"></div></div>' +
+        '<div class="v num">' + fmt(u.taxa) + '%</div>';
+      var rel = u.taxa - media;
+      bindTip(row, '<b>' + u.nome + '</b><br>Desocupação: <b>' + fmt(u.taxa) + '%</b><br><span class="t-sub">' +
+        (Math.abs(rel) < 0.05 ? 'Exatamente a média nacional (5,4%)'
+          : fmt(Math.abs(rel)) + ' p.p. ' + (rel > 0 ? 'acima' : 'abaixo') + ' da média nacional (5,4%)') +
+        '</span>');
+      host.appendChild(row);
+    });
+
+    $('countUf').textContent = 'Mostrando ' + lista.length + ' de ' + UFS.length + ' estados · escala de 0% a 10%';
+  }
+
+  /* ---------- painel 4: recortes ---------- */
+  function renderRec(){
+    var rec = RECORTES[estado.rec];
+    var host = $('barsRec');
+    host.innerHTML = '';
+    var maxEscala = 10;
+    var media = 5.4;
+    rec.itens.forEach(function(it){
+      var row = document.createElement('div');
+      row.className = 'hrow';
+      row.innerHTML =
+        '<div class="name">' + it.n + '</div>' +
+        '<div class="track"><div class="fill" style="width:' + ((it.v / maxEscala) * 100) + '%"></div></div>' +
+        '<div class="v num">' + fmt(it.v) + '%</div>';
+      var rel = it.v - media;
+      bindTip(row, '<b>' + it.n + '</b><br>Desocupação: <b>' + fmt(it.v) + '%</b><br><span class="t-sub">' +
+        fmt(Math.abs(rel)) + ' p.p. ' + (rel > 0 ? 'acima' : 'abaixo') + ' da média nacional (5,4%)</span>');
+      host.appendChild(row);
+    });
+  }
+
+  /* ---------- render geral ---------- */
+  function render(){
+    montaSeg($('segTri'), TRI.map(function(t){ return { id:t.id, label:t.label }; }), 'tri', render);
+    montaSeg($('segUf'), [
+      { id:'todos',   label:'Todos' },
+      { id:'maiores', label:'Maiores taxas' },
+      { id:'menores', label:'Menores taxas' },
+      { id:'sp',      label:'Só SP' }
+    ], 'uf', render);
+    montaSeg($('segOrd'), [
+      { id:'desc', label:'Maior → menor' },
+      { id:'asc',  label:'Menor → maior' }
+    ], 'ord', render);
+    montaSeg($('segRec'), Object.keys(RECORTES).map(function(k){
+      return { id:k, label:RECORTES[k].label };
+    }), 'rec', render);
+
+    renderTri();
+    renderSp();
+    renderUf();
+    renderRec();
+    hideTip();
+  }
+
+  $('btnReset').addEventListener('click', function(){
+    estado = Object.assign({}, PADRAO);
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
